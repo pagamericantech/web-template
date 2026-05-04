@@ -291,9 +291,17 @@ jobs:
           sed -i "s|image_name: __IMAGE_NAME__|image_name: ${APP_NAME}|" .github/workflows/build_and_deploy.yaml
           sed -i -E "s|values_file: chart/values-k8s-[a-z0-9-]+\.yaml|values_file: chart/values-k8s-${TARGET_ENV}.yaml|" .github/workflows/build_and_deploy.yaml
 
-          # Renomeia o values genérico do template pro nome canônico do cluster alvo.
+          # Renomeia o values genérico do template pro nome canônico do cluster alvo
+          # e substitui placeholders derivados (__IMAGE_NAME__, __APP_NAME__, k8s-aws-account).
+          # __OWNER__ e __LANGUAGE__ continuam pendentes — usuário edita manualmente.
           if [ -f "chart/values-k8s-aws-account.yaml" ]; then
             git mv "chart/values-k8s-aws-account.yaml" "chart/values-k8s-${TARGET_ENV}.yaml"
+          fi
+          VALUES_FILE="chart/values-k8s-${TARGET_ENV}.yaml"
+          if [ -f "$VALUES_FILE" ]; then
+            sed -i "s|__IMAGE_NAME__|${APP_NAME}|g" "$VALUES_FILE"
+            sed -i "s|__APP_NAME__|${APP_NAME}|g" "$VALUES_FILE"
+            sed -i "s|k8s-aws-account|k8s-${TARGET_ENV}|g" "$VALUES_FILE"
           fi
 
           # Remove esse próprio workflow.
