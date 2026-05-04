@@ -57,7 +57,7 @@ httpRoute:
       namespace: envoy-gateway-system
       sectionName: https
   hostnames:
-    - __APP_NAME__.k8s-shared-services.pagamerican.tech
+    - __APP_NAME__.k8s-aws-account.pagamerican.tech
 healthcheck:
   livenessProbe:
     enabled: true
