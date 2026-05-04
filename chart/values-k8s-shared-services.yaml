@@ -1,0 +1,75 @@
+# Chart: https://github.com/pagamericantech/platform-charts/tree/main/__CHART_NAME__
+#
+# Override values pra deploy do __APP_NAME__ no cluster k8s-shared-services.
+# `image.tag` é atualizado pelo workflow .github/workflows/build_and_deploy.yaml
+# após cada build de main.
+
+image:
+  repository: 946819142358.dkr.ecr.us-east-1.amazonaws.com/__IMAGE_NAME__
+  pullPolicy: IfNotPresent
+  tag: "REPLACE_ME"
+containerPort: 8080
+labels:
+  cost-center: shared-services
+  env: production
+  project: __APP_NAME__
+  owner: __OWNER__
+  support: __OWNER__
+  github-org: pagamericantech
+  github-repo: __APP_NAME__
+annotations:
+  documentation: https://github.com/pagamericantech/__APP_NAME__
+application:
+  name: __APP_NAME__
+  language: __LANGUAGE__
+  environment: production
+cloudProviders:
+  aws:
+    enabled: true
+    # Pull de ECR via IRSA/PodIdentity do namespace — não precisa de imagePullSecret.
+    imagePullSecrets: {}
+secrets:
+  keys: []
+  remoteKey: ""
+datadog:
+  enabled: false
+# Autoscaling via KEDA (ScaledObject). CPU + memory são os triggers default —
+# o chart também suporta kafka/sqs/rabbitmq/datadog (ver values.yaml do
+# platform-k8s-web-chart pra schema completo de cada scaler).
+autoscaling:
+  enabled: true
+  maxReplicas: 3
+  cpu:
+    # https://keda.sh/docs/2.9/scalers/cpu/
+    target: "80"
+    metricType: Utilization
+  memory:
+    # https://keda.sh/docs/2.9/scalers/memory/
+    target: "80"
+    metricType: Utilization
+# Exposição via Envoy Gateway interno (ajuste pra `external` + sectionName
+# correto se for hostname público em *.pagamerican.app / *.pagamerican.tech).
+httpRoute:
+  enabled: true
+  servicePort: 8080
+  parentRefs:
+    - name: internal
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - __APP_NAME__.k8s-shared-services.pagamerican.tech
+healthcheck:
+  livenessProbe:
+    enabled: true
+    path: /
+    failureThreshold: 3
+    periodSeconds: 20
+    initialDelaySeconds: 15
+    timeoutSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /
+    failureThreshold: 3
+    periodSeconds: 20
+    initialDelaySeconds: 15
+    timeoutSeconds: 10
