@@ -20,6 +20,20 @@ on:
           - payments
           - staging
           - workspace
+      owner:
+        description: Time/squad responsável (preenche labels owner/support no chart values)
+        required: true
+        type: string
+      language:
+        description: Linguagem da app (preenche application.language no chart values)
+        required: true
+        type: choice
+        default: node
+        options:
+          - go
+          - node
+          - python
+          - static
 
 permissions:
   contents: write
@@ -282,6 +296,8 @@ jobs:
         env:
           APP_NAME: ${{ steps.meta.outputs.app_name }}
           TARGET_ENV: ${{ inputs.target_env }}
+          OWNER: ${{ inputs.owner }}
+          LANGUAGE: ${{ inputs.language }}
         run: |
           set -euo pipefail
           git config user.name  "${{ steps.bot.outputs.name }}"
@@ -292,8 +308,7 @@ jobs:
           sed -i -E "s|values_file: chart/values-k8s-[a-z0-9-]+\.yaml|values_file: chart/values-k8s-${TARGET_ENV}.yaml|" .github/workflows/build_and_deploy.yaml
 
           # Renomeia o values genérico do template pro nome canônico do cluster alvo
-          # e substitui placeholders derivados (__IMAGE_NAME__, __APP_NAME__, k8s-aws-account).
-          # __OWNER__ e __LANGUAGE__ continuam pendentes — usuário edita manualmente.
+          # e substitui todos os placeholders pelos valores derivados/inputs.
           if [ -f "chart/values-k8s-aws-account.yaml" ]; then
             git mv "chart/values-k8s-aws-account.yaml" "chart/values-k8s-${TARGET_ENV}.yaml"
           fi
@@ -301,6 +316,8 @@ jobs:
           if [ -f "$VALUES_FILE" ]; then
             sed -i "s|__IMAGE_NAME__|${APP_NAME}|g" "$VALUES_FILE"
             sed -i "s|__APP_NAME__|${APP_NAME}|g" "$VALUES_FILE"
+            sed -i "s|__OWNER__|${OWNER}|g" "$VALUES_FILE"
+            sed -i "s|__LANGUAGE__|${LANGUAGE}|g" "$VALUES_FILE"
             sed -i "s|k8s-aws-account|k8s-${TARGET_ENV}|g" "$VALUES_FILE"
           fi
 
