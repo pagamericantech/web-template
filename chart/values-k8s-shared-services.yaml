@@ -1,4 +1,4 @@
-# Chart: https://github.com/pagamericantech/platform-charts/tree/main/__CHART_NAME__
+# Chart: https://github.com/pagamericantech/platform-charts/tree/main/platform-k8s-web-chart
 #
 # Override values pra deploy do __APP_NAME__ no cluster k8s-shared-services.
 # `image.tag` é atualizado pelo workflow .github/workflows/build_and_deploy.yaml
