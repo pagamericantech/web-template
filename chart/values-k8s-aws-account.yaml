@@ -10,7 +10,7 @@ image:
   tag: "REPLACE_ME"
 containerPort: 8080
 labels:
-  cost-center: shared-services
+  cost-center: k8s-aws-account
   env: production
   project: __APP_NAME__
   owner: __OWNER__
