@@ -23,11 +23,24 @@ Para outros tipos de workload, use o template correspondente:
 └── .gitignore
 ```
 
-O fluxo é:
+O fluxo (PR → staging → produção):
 
-1. Push em `main` → workflow builda imagem, pusha pra ECR (cria o repo se não existir).
-2. Workflow atualiza `chart/values-k8s-shared-services.yaml` com a nova `image.tag` em commit `[skip ci]`.
-3. ArgoCD detecta a mudança no values (multi-source ApplicationSet em `platform-applications`) e faz o deploy via `platform-k8s-web-chart`.
+1. **PR aberta** → `pr-checks.yml` roda `helm lint chart/` + `docker build` (sem push) pra validar antes do merge. Não deploya nada.
+2. **Merge em `main`** → `build_and_deploy.yaml` builda imagem, pusha pra ECR e bumpa `image.tag` em commit `[skip ci]`. Pra `target_env ∈ {workspace, payments}` o bump é em `chart/values-k8s-staging.yaml` (CD contínuo de staging); pra `target_env ∈ {staging, shared-services}` o bump é direto no values primário.
+3. **ArgoCD staging** sincroniza e deploya no cluster `k8s-staging`.
+4. **Quando staging está estável**, dispara o workflow `Release to production` (em **Actions → Release to production → Run workflow**). Ele lê a `image.tag` atual de staging, bumpa o values primário (`chart/values-k8s-${target_env}.yaml`) e force-pusha branch `release`.
+5. **ArgoCD prod** segue o branch `release` (via `targetRevision` condicional na ApplicationSet) e deploya em workspace/payments.
+
+> ℹ️ Apps com `target_env ∈ {staging, shared-services}` **não têm release flow** — o bootstrap deleta o `release.yml` automaticamente, e o `targetRevision` da ApplicationSet fica `main` puro.
+
+> ⚠️ Pra rollback de prod: dispare `Release to production` passando o `ref` do commit anterior (input do workflow_dispatch). Fast-forward backwards no branch `release`.
+
+### Branch protection recomendada
+
+Configure no GitHub UI ou via `gh` (depois do bootstrap):
+
+- **`release`** branch: bloqueado pra push direto. Só o workflow `release.yml` (que usa `GITHUB_TOKEN`) força-push.
+- **`chart/values-k8s-${target_env}.yaml`** (values primário): adicionar a `.github/CODEOWNERS` apontando pro time de plataforma — evita edições manuais que conflitam com o release.yml.
 
 ## Como criar um novo app a partir desse template
 
