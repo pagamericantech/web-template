@@ -35,18 +35,16 @@ O fluxo (PR → staging → produção):
 
 > ⚠️ Pra rollback de prod: dispare `Release to production` passando o `ref` do commit anterior (input do workflow_dispatch). Fast-forward backwards no branch `release`.
 
-### Setup do release flow (automático no bootstrap)
+### Setup automatizado pelo bootstrap
 
-Pra apps com `target_env ∈ {workspace, payments}`, o `bootstrap.yml` já faz, ao final:
+Tudo que o `bootstrap.yml` configura automaticamente no repo da app:
 
-- Cria branch `release` apontando pro main HEAD (mesmo commit do bootstrap-complete).
-- Tenta criar ruleset "Protect release branch" que bloqueia `deletion` + `non_fast_forward`, com bypass apenas pro app `pagamerican-gitops`. Se o token não tiver `Administration:Write` instalado, emite warning — nesse caso configure manualmente em **Settings → Rules → Rulesets**.
+- **`.github/CODEOWNERS`** com regra `chart/values-k8s-*.yaml @pagamericantech/infrastructure @pagamericantech/engineering` — protege todos os values do chart, que são mantidos pelos workflows.
+- Pra apps com `target_env ∈ {workspace, payments}`:
+  - Cria branch `release` apontando pro main HEAD.
+  - Tenta criar ruleset "Protect release branch" (bloqueia `deletion` + `non_fast_forward`, bypass pro app `pagamerican-gitops`). Se o token não tiver `Administration:Write`, emite warning — nesse caso configure manualmente em **Settings → Rules → Rulesets**.
 
 `release.yml` autentica via `pagamerican-gitops` (secrets `ORG_GITOPS_BOT_*`), não via `GITHUB_TOKEN` default — é o único actor com bypass do ruleset.
-
-### Manual follow-up
-
-- **`.github/CODEOWNERS`** apontando `chart/values-k8s-${target_env}.yaml` pro time responsável (e.g., `@pagamericantech/infrastructure`). Evita edições humanas conflitando com o `release.yml` que mantém o values primário atualizado.
 
 ## Como criar um novo app a partir desse template
 
