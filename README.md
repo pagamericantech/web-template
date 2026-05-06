@@ -25,7 +25,7 @@ Para outros tipos de workload, use o template correspondente:
 
 O fluxo (PR → staging → produção):
 
-1. **PR aberta** → `pr-checks.yml` roda `helm lint chart/` + `docker build` (sem push) pra validar antes do merge. Não deploya nada.
+1. **PR aberta** → `pr-checks.yml` roda `docker build` (sem push) pra validar o Dockerfile antes do merge. Não deploya nada.
 2. **Merge em `main`** → `build_and_deploy.yaml` builda imagem, pusha pra ECR e bumpa `image.tag` em commit `[skip ci]`. Pra `target_env ∈ {workspace, payments}` o bump é em `chart/values-k8s-staging.yaml` (CD contínuo de staging); pra `target_env ∈ {staging, shared-services}` o bump é direto no values primário.
 3. **ArgoCD staging** sincroniza e deploya no cluster `k8s-staging`.
 4. **Quando staging está estável**, dispara o workflow `Release to production` (em **Actions → Release to production → Run workflow**). Ele lê a `image.tag` atual de staging, bumpa o values primário (`chart/values-k8s-${target_env}.yaml`) e force-pusha branch `release`.
